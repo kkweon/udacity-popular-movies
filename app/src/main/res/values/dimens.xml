@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="movie_poster_height">300dp</dimen>
+    <!-- 3:5 = x: 300 => 5x = 900-->
+    <dimen name="movie_poster_width">200dp</dimen>
+</resources>

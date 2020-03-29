@@ -13,10 +13,9 @@ class MovieDetailAdapter extends RecyclerView.Adapter<MovieDetailAdapter.MovieDe
     @NonNull
     @Override
     public MovieDetailViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        boolean attachToRoot = false;
         View inflatedView =
                 LayoutInflater.from(parent.getContext())
-                        .inflate(R.layout.movie_detail, parent, attachToRoot);
+                        .inflate(R.layout.movie_detail, parent, /*attachToRoot=*/ false);
         return new MovieDetailViewHolder(inflatedView);
     }
 
@@ -31,7 +30,7 @@ class MovieDetailAdapter extends RecyclerView.Adapter<MovieDetailAdapter.MovieDe
     }
 
     public class MovieDetailViewHolder extends RecyclerView.ViewHolder {
-        private ImageView moviePosterImageView;
+        public ImageView moviePosterImageView;
 
         public MovieDetailViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -42,7 +41,7 @@ class MovieDetailAdapter extends RecyclerView.Adapter<MovieDetailAdapter.MovieDe
             Log.v(
                     MovieDetailViewHolder.class.getSimpleName(),
                     String.format("position=%d", position));
-            Picasso.get().load("http://i.imgur.com/DvpvklR.png").into(moviePosterImageView);
+            Picasso.get().load("https://i.imgur.com/DvpvklR.png").fit().into(moviePosterImageView);
         }
     }
 }

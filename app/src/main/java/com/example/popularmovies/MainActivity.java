@@ -15,7 +15,13 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         moviePosters = findViewById(R.id.recycler_view_movie_posters);
-        moviePosters.setLayoutManager(new GridLayoutManager(this, 3));
+        moviePosters.setLayoutManager(
+                new GridLayoutManager(
+                        this,
+                        Utility.calculateNoOfColumns(
+                                getApplicationContext(),
+                                getResources().getDimension(R.dimen.movie_poster_width))));
         moviePosters.setAdapter(new MovieDetailAdapter());
+        moviePosters.setHasFixedSize(true);
     }
 }
