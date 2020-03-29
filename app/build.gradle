@@ -44,10 +44,10 @@ dependencies {
 	androidTestImplementation 'androidx.test.ext:junit:1.1.1'
 	androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
-    // Lombok will make POJO cleaner.
+	// Lombok will make POJO cleaner.
 	compileOnly 'org.projectlombok:lombok:1.18.12'
 	annotationProcessor 'org.projectlombok:lombok:1.18.12'
 
-    // Google JSON lib.
+	// Google JSON lib.
 	implementation 'com.google.code.gson:gson:2.8.6'
 }

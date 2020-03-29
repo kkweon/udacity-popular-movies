@@ -1,11 +1,12 @@
 package com.example.popularmovies;
 
+import java.util.List;
 import lombok.Data;
 
 @Data
 public class MovieResponse {
-    private String page;
-    private String total_pages;
-    private MovieItemResponse[] results;
-    private String total_results;
+    private int page;
+    private int total_pages;
+    private List<MovieItemResponse> results;
+    private int total_results;
 }
