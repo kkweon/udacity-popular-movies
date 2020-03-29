@@ -5,9 +5,8 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <ImageView
-        android:id="@+id/image_view_movie_posters"
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/recycler_view_movie_posters"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"></ImageView>
-
+        android:layout_height="wrap_content"></androidx.recyclerview.widget.RecyclerView>
 </FrameLayout>
