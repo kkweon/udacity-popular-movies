@@ -31,6 +31,6 @@ public class MovieResponseTest {
         assertEquals("Dilwale Dulhania Le Jayenge", resp.getResults().get(0).getTitle());
         assertEquals(
                 new GregorianCalendar(1995, Calendar.OCTOBER, 20).getTime(),
-                resp.getResults().get(0).getRelease_date());
+                resp.getResults().get(0).getReleaseDate());
     }
 }
