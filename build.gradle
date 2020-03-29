@@ -1,29 +1,43 @@
 // Top-level build file where you can add configuration options common to all sub-projects/modules.
-
 buildscript {
-    
-    repositories {
-        google()
-        jcenter()
-        
-    }
-    dependencies {
-        classpath 'com.android.tools.build:gradle:3.6.1'
-        
 
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
-    }
+	repositories {
+		google()
+		jcenter()
+
+	}
+	dependencies {
+		classpath 'com.android.tools.build:gradle:3.6.1'
+
+
+		// NOTE: Do not place your application dependencies here; they belong
+		// in the individual module build.gradle files
+	}
+}
+
+plugins {
+	id "com.diffplug.gradle.spotless" version "3.28.0"
+}
+
+spotless {
+	format 'misc', {
+		target '**/*.gradle', '**/*.md', '**/.gitignore'
+
+		trimTrailingWhitespace()
+		indentWithTabs() // or spaces. Takes an integer argument if you don't like 4
+		endWithNewline()
+	}
+
+	java {
+		target '**/*.java'
+		googleJavaFormat().aosp()
+	}
 }
 
 allprojects {
-    repositories {
-        google()
-        jcenter()
-        
-    }
-}
+	repositories {
+		google()
+		jcenter()
 
-task clean(type: Delete) {
-    delete rootProject.buildDir
+	}
 }
