@@ -1,6 +1,6 @@
 package com.example.popularmovies;
 
-import com.example.popularmovies.pojos.MovieResponse;
+import com.example.popularmovies.pojos.movielist.MovieResponse;
 import retrofit2.Call;
 import retrofit2.http.GET;
 import retrofit2.http.Query;
