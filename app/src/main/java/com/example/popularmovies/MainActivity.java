@@ -16,6 +16,6 @@ public class MainActivity extends AppCompatActivity {
 
         moviePosters = findViewById(R.id.recycler_view_movie_posters);
         moviePosters.setLayoutManager(new GridLayoutManager(this, 3));
-        moviePosters.setAdapter(new MoviePosterAdapter());
+        moviePosters.setAdapter(new MovieDetailAdapter());
     }
 }
