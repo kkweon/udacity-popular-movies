@@ -1,25 +1,28 @@
 package com.example.popularmovies;
 
-import android.net.Uri;
-import java.util.ArrayList;
-import java.util.List;
+import com.example.popularmovies.pojos.MovieResponse;
+import retrofit2.Call;
+import retrofit2.http.GET;
+import retrofit2.http.Query;
 
-public class MovieService {
+public interface MovieService {
     // See https://themoviedb.org for the details.
-    private static final String BASE_TMDB_HOST = "https://api.themoviedb.org/3";
+    static final String BASE_TMDB_HOST = "https://api.themoviedb.org/3";
 
-    private static final String POPULAR_MOVIES_PATH = "/movie/popular";
-    private static final String TOP_RATED_MOVIES_PATH = "/movie/top_rated";
+    static final String POPULAR_MOVIES_PATH = "/movie/popular";
+    static final String TOP_RATED_MOVIES_PATH = "/movie/top_rated";
 
-    List<Movie> getPopularMovies(int page) {
-        Uri uri =
-                Uri.parse(BASE_TMDB_HOST)
-                        .buildUpon()
-                        .path(POPULAR_MOVIES_PATH)
-                        .appendQueryParameter("api_key", BuildConfig.TMDB_API_KEY)
-                        .appendQueryParameter("page", String.valueOf(page))
-                        .build();
+    @GET("movie/popular")
+    Call<MovieResponse> getPopularMovies(
+            @Query("api_key") String apiKey,
+            @Query("page") int page,
+            @Query("language") String language,
+            @Query("region") String region);
 
-        return new ArrayList<>();
-    }
+    @GET("movie/top_rated")
+    Call<MovieResponse> getTopRatedMovies(
+            @Query("api_key") String apiKey,
+            @Query("page") int page,
+            @Query("language") String language,
+            @Query("region") String region);
 }

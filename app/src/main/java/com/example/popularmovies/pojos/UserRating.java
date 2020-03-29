@@ -1,9 +1,9 @@
-package com.example.popularmovies;
+package com.example.popularmovies.pojos;
 
 import lombok.Data;
 
 @Data
-class UserRating {
+public class UserRating {
     double score;
 
     public UserRating(double score) throws IllegalArgumentException {

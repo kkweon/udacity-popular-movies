@@ -2,6 +2,7 @@ package com.example.popularmovies;
 
 import static org.junit.Assert.*;
 
+import com.example.popularmovies.pojos.MovieResponse;
 import com.google.gson.Gson;
 import java.io.File;
 import java.io.IOException;

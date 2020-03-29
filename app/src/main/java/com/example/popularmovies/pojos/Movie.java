@@ -1,10 +1,10 @@
-package com.example.popularmovies;
+package com.example.popularmovies.pojos;
 
 import java.util.Date;
 import lombok.Data;
 
 @Data
-class Movie {
+public class Movie {
     private String title;
     private String thumbnail;
     private String synopsis;

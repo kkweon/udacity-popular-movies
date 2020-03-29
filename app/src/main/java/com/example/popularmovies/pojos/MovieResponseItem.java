@@ -1,4 +1,4 @@
-package com.example.popularmovies;
+package com.example.popularmovies.pojos;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
@@ -7,7 +7,7 @@ import java.util.List;
 import lombok.Data;
 
 @Data
-class MovieResponseItem {
+public class MovieResponseItem {
     @SerializedName("popularity")
     @Expose
     private double popularity;
