@@ -1,77 +1,126 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:orientation="vertical"
-    tools:context=".MovieDetailsActivity">
+    android:layout_height="match_parent">
 
-    <FrameLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="@android:color/background_dark">
 
-        <ImageView
-            android:id="@+id/ImageView_movieDetailsPoster"
-            android:layout_width="200dp"
-            android:layout_height="300dp"
-            android:layout_gravity="center" />
-
-        <ImageButton
-            android:id="@+id/ImageButton_movieDetailsPlayButton"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
-            android:layout_gravity="center"
-            android:background="@color/colorPrimary"
-            android:src="@android:drawable/ic_media_play" />
-    </FrameLayout>
-
-    <LinearLayout
+    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+        xmlns:tools="http://schemas.android.com/tools"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
-        android:padding="20dp">
+        tools:context=".MovieDetailsActivity">
 
-        <TextView
-            android:id="@+id/TextView_movieDetailsTitle"
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textStyle="bold"
-            android:textSize="22sp" />
+            android:background="@color/colorPrimary"
+            android:padding="@dimen/movie_detail_padding">
 
-        <LinearLayout android:layout_height="wrap_content"
-            android:layout_width="match_parent">
             <TextView
-                android:text="User Score: "
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"/>
-            <TextView
-                android:id="@+id/TextView_movieDetailsRating"
+                android:id="@+id/TextView_movieDetailsTitle"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginBottom="@dimen/movie_detail_margin_bottom"
-                android:textStyle="italic" />
+                android:layout_height="120dp"
+                android:fontFamily="Roboto"
+                android:gravity="center_vertical"
+                android:text="Title"
+                android:textColor="#ffffff"
+                android:textFontWeight="300"
+                android:textSize="30sp" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/movie_detail_padding">
+
+            <ImageView
+                android:id="@+id/ImageView_movieDetailsPoster"
+                android:layout_width="200dp"
+                android:layout_height="300dp"
+                android:layout_gravity="center"
+                android:layout_marginRight="@dimen/movie_detail_margin_bottom" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:orientation="vertical">
+
+                <TextView
+                    android:id="@+id/TextView_movieDetailsYear"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textSize="20sp" />
+
+                <TextView
+                    android:id="@+id/TextView_detail_runningTime"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textStyle="italic" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="User Score: " />
+
+                    <TextView
+                        android:id="@+id/TextView_movieDetailsRating"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginBottom="@dimen/movie_detail_margin_bottom"
+                        android:textStyle="italic" />
+                </LinearLayout>
+
+                <Button
+                    android:id="@+id/Button_addToFavorite"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/remove_from_favorite" />
+
+            </LinearLayout>
+
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/TextView_movieDetailsSynopsis"
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_marginBottom="@dimen/movie_detail_margin_bottom"
-            android:layout_height="wrap_content" />
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:padding="@dimen/movie_detail_padding">
+
+            <TextView
+                android:id="@+id/TextView_movieDetailsSynopsis"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="@dimen/movie_detail_margin_bottom" />
 
 
-        <TextView
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:textSize="20sp"
-            android:text="Reviews" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Trailers"
+                android:textSize="20sp" />
 
-        <androidx.recyclerview.widget.RecyclerView
-            android:id="@+id/RecyclerView_movieReviews"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/RecyclerView_movieTrailers"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Reviews"
+                android:textSize="20sp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/RecyclerView_movieReviews"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content" />
 
 
+        </LinearLayout>
     </LinearLayout>
-
-</LinearLayout>
+</androidx.core.widget.NestedScrollView>

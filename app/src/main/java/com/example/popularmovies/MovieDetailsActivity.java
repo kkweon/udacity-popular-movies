@@ -3,19 +3,20 @@ package com.example.popularmovies;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
-import android.view.View;
-import android.widget.ImageButton;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.popularmovies.pojos.Movie;
+import com.example.popularmovies.pojos.moviedetails.MovieDetailsResponse;
 import com.example.popularmovies.pojos.moviereviews.MovieReviewsResponse;
 import com.example.popularmovies.pojos.moviereviews.MovieReviewsResponseItem;
 import com.example.popularmovies.pojos.movievideos.MovieVideosResponse;
 import com.example.popularmovies.pojos.movievideos.MovieVideosResponseItem;
 import com.squareup.picasso.Picasso;
+import java.util.Calendar;
 import java.util.List;
 import java.util.stream.Collectors;
 import retrofit2.Call;
@@ -27,16 +28,18 @@ public class MovieDetailsActivity extends AppCompatActivity {
     public static final String YOUTUBE = "YouTube";
     public static final String HTTPS_YOUTUBE_COM_WATCH = "https://youtube.com/watch";
     public static final String YOUTUBE_VIDEO_ID_QUERY_PARAM = "v";
+    private Movie movie;
     private ImageView movieDetailsPoster;
     private TextView movieDetailsRating;
-    private TextView movieDetailsSynposis;
+    private TextView movieDetailsSynopsis;
     private TextView movieDetailsTitle;
     private MovieService movieService;
-    private ImageButton movieDetailsPlayButton;
-    private MovieVideosResponseItem movieVideosResponseItem;
+    private TextView textViewRunningTime;
+    private TextView movieDetailsYear;
 
+    private RecyclerView movieTrailers;
     private RecyclerView movieDetailsReviews;
-    private MovieDetailsReviewsAdapter movieDetailsReviewsAdapter;
+    private Button movieDetailsFavoriteButton;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -46,12 +49,12 @@ public class MovieDetailsActivity extends AppCompatActivity {
         // Attach XML elements.
         movieDetailsPoster = findViewById(R.id.ImageView_movieDetailsPoster);
         movieDetailsRating = findViewById(R.id.TextView_movieDetailsRating);
-        movieDetailsSynposis = findViewById(R.id.TextView_movieDetailsSynopsis);
+        movieDetailsSynopsis = findViewById(R.id.TextView_movieDetailsSynopsis);
         movieDetailsTitle = findViewById(R.id.TextView_movieDetailsTitle);
-        movieDetailsPlayButton = findViewById(R.id.ImageButton_movieDetailsPlayButton);
-        movieDetailsPlayButton.setOnClickListener(v -> playVideo(movieVideosResponseItem));
         movieDetailsReviews = findViewById(R.id.RecyclerView_movieReviews);
-        initializeReviews(movieDetailsReviews, movieDetailsReviewsAdapter);
+        movieTrailers = findViewById(R.id.RecyclerView_movieTrailers);
+        movieDetailsYear = findViewById(R.id.TextView_movieDetailsYear);
+        movieDetailsFavoriteButton = findViewById(R.id.Button_addToFavorite);
 
         Intent intent = getIntent();
         if (intent == null) {
@@ -61,44 +64,82 @@ public class MovieDetailsActivity extends AppCompatActivity {
         }
 
         if (intent.hasExtra("Movie")) {
-            Movie movie = (Movie) intent.getSerializableExtra("Movie");
+            movie = (Movie) intent.getSerializableExtra("Movie");
+
+            ApplicationService.getInstance()
+                    .getFavoriteMovieIdsObservable()
+                    .subscribe(
+                            favoriteMovieIds -> {
+                                if (favoriteMovieIds.contains(movie.getId())) {
+                                    setFavorite(true);
+                                } else {
+                                    setFavorite(false);
+                                }
+                            });
 
             Picasso.get().load(movie.getThumbnail()).fit().into(movieDetailsPoster);
             movieDetailsRating.setText(movie.getUserRating().toString());
-            movieDetailsSynposis.setText(movie.getSynopsis());
+            movieDetailsSynopsis.setText(movie.getSynopsis());
             movieDetailsTitle.setText(movie.getTitle());
+            movieDetailsYear.setText(String.valueOf(movie.getReleaseDate().get(Calendar.YEAR)));
 
             movieService = MovieManager.getMovieService();
-            Call<MovieVideosResponse> movieVideosResponse =
-                    movieService.getVideos(
+
+            // Register click listener to the "Add to favorite" button.
+            movieDetailsFavoriteButton.setOnClickListener(
+                    v -> ApplicationService.getInstance().toggleFavoriteMovieIds(movie.getId()));
+
+            // Get running time
+            movieService
+                    .getMovieDetails(
                             movie.getId(),
                             BuildConfig.TMDB_API_KEY,
-                            getResources().getString(R.string.language));
-            movieVideosResponse.enqueue(
-                    new Callback<MovieVideosResponse>() {
-                        @Override
-                        public void onResponse(
-                                Call<MovieVideosResponse> call,
-                                Response<MovieVideosResponse> response) {
-                            MovieVideosResponse videosResponse = response.body();
-                            // TODO(kkweon): Suppose other types than YouTube in the future.
-                            List<MovieVideosResponseItem> videosResponseItems =
-                                    videosResponse.results.stream()
-                                            .filter(v -> v.site.equals(YOUTUBE))
-                                            .collect(Collectors.toList());
-                            if (!videosResponseItems.isEmpty()) {
-                                movieVideosResponseItem = videosResponseItems.get(0);
-                            } else {
-                                // Since there's no video attached to this video, hide the play
-                                // button.
-                                movieDetailsPlayButton.setVisibility(View.GONE);
-                            }
-                        }
+                            getResources().getString(R.string.language))
+                    .enqueue(
+                            new Callback<MovieDetailsResponse>() {
+                                @Override
+                                public void onResponse(
+                                        Call<MovieDetailsResponse> call,
+                                        Response<MovieDetailsResponse> response) {
+                                    textViewRunningTime =
+                                            findViewById(R.id.TextView_detail_runningTime);
+                                    textViewRunningTime.setText(
+                                            String.valueOf(response.body().getRuntime()) + " min");
+                                }
 
-                        @Override
-                        public void onFailure(Call<MovieVideosResponse> call, Throwable t) {}
-                    });
+                                @Override
+                                public void onFailure(
+                                        Call<MovieDetailsResponse> call, Throwable t) {}
+                            });
 
+            // Get trailers for the movies.
+            movieService
+                    .getVideos(
+                            movie.getId(),
+                            BuildConfig.TMDB_API_KEY,
+                            getResources().getString(R.string.language))
+                    .enqueue(
+                            new Callback<MovieVideosResponse>() {
+                                @Override
+                                public void onResponse(
+                                        Call<MovieVideosResponse> call,
+                                        Response<MovieVideosResponse> response) {
+                                    MovieVideosResponse videosResponse = response.body();
+                                    // TODO(kkweon): Suppose other types than YouTube in the future.
+                                    List<MovieVideosResponseItem> videosResponseItems =
+                                            videosResponse.results.stream()
+                                                    .filter(v -> v.site.equals(YOUTUBE))
+                                                    .collect(Collectors.toList());
+
+                                    initializeTrailers(movieTrailers, videosResponseItems);
+                                }
+
+                                @Override
+                                public void onFailure(
+                                        Call<MovieVideosResponse> call, Throwable t) {}
+                            });
+
+            // Get reviews for this movie.
             movieService
                     .getReviews(
                             movie.getId(),
@@ -125,6 +166,27 @@ public class MovieDetailsActivity extends AppCompatActivity {
 
             setTitle(movie.getTitle());
         }
+    }
+
+    private void setFavorite(boolean isFavorite) {
+        if (isFavorite) {
+            movieDetailsFavoriteButton.setText(R.string.remove_from_favorite);
+        } else {
+            movieDetailsFavoriteButton.setText(R.string.add_to_favorite);
+        }
+    }
+
+    private void initializeTrailers(
+            RecyclerView movieTrailers, List<MovieVideosResponseItem> videosResponseItems) {
+        RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
+        movieTrailers.setLayoutManager(layoutManager);
+        movieTrailers.setHasFixedSize(true);
+        movieTrailers.setAdapter(
+                new MovieTrailerAdapter(
+                        videosResponseItems,
+                        item -> {
+                            playVideo(item);
+                        }));
     }
 
     private void initializeReviews(

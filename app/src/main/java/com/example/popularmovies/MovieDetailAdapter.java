@@ -53,13 +53,12 @@ class MovieDetailAdapter extends RecyclerView.Adapter<MovieDetailAdapter.MovieDe
             Movie m = movies.get(position);
             Picasso.get().load(m.getThumbnail()).fit().into(moviePosterImageView);
 
-            itemView.setOnClickListener(
-                    new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            clickListener.onClick(m);
-                        }
-                    });
+            if (ApplicationService.getInstance().getFavoriteMovieIds().contains(m.getId())) {
+                itemView.setBackground(
+                        itemView.getResources().getDrawable(R.drawable.border_red, null));
+            }
+
+            itemView.setOnClickListener(v -> clickListener.onClick(m));
         }
     }
 

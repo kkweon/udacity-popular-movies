@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_vertical"
+    android:orientation="horizontal">
+
+    <ImageButton
+        android:id="@+id/ImageButton_trailerPlayButton"
+        android:layout_width="75dp"
+        android:src="@android:drawable/ic_media_play"
+        android:layout_marginRight="@dimen/movie_detail_padding"
+        android:layout_height="75dp" />
+
+    <TextView
+        android:id="@+id/TextView_trailerTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+</LinearLayout>

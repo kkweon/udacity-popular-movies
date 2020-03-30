@@ -15,6 +15,7 @@ import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.popularmovies.pojos.Movie;
 import com.example.popularmovies.pojos.movielist.MovieResponse;
+import java.util.Set;
 import java.util.stream.Collectors;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -23,7 +24,6 @@ import retrofit2.Response;
 public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    private MovieViewModel modelViewModel;
 
     private MovieDetailAdapter movieDetailAdapter;
     private ApplicationViewModel applicationViewModel;
@@ -32,6 +32,7 @@ public class MainActivity extends AppCompatActivity {
     private MenuItem highestRatingMoviesMenuItem;
     private RecyclerView recyclerViewMoviePoster;
     private ProgressBar progressBarLoading;
+    private MenuItem filterByFavoriteMenuItem;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,13 +46,10 @@ public class MainActivity extends AppCompatActivity {
         // Store so we can manipulate when updating data.
         movieDetailAdapter =
                 new MovieDetailAdapter(
-                        new MovieDetailAdapter.MovieDetailClickListener() {
-                            @Override
-                            public void onClick(Movie m) {
-                                Intent intent = new Intent(context, MovieDetailsActivity.class);
-                                intent.putExtra("Movie", m);
-                                startActivity(intent);
-                            }
+                        m -> {
+                            Intent intent = new Intent(context, MovieDetailsActivity.class);
+                            intent.putExtra("Movie", m);
+                            startActivity(intent);
                         });
 
         // This contains the current movie ranking setting (sort by popularity or rating).
@@ -59,15 +57,17 @@ public class MainActivity extends AppCompatActivity {
 
         // This contains LiveData<List<Movie>>. This is the single source of truth for movies data
         // in the UI.
-        modelViewModel = new ViewModelProvider(this).get(MovieViewModel.class);
-        modelViewModel
-                .getMovies()
-                .observe(
-                        this,
+        ApplicationService.getInstance()
+                .getMoviesObservable()
+                .subscribe(
                         movies -> {
                             movieDetailAdapter.setMovies(movies);
                             movieDetailAdapter.notifyDataSetChanged();
                         });
+
+        ApplicationService.getInstance()
+                .getFavoriteMovieIdsObservable()
+                .subscribe(ids -> movieDetailAdapter.notifyDataSetChanged());
 
         recyclerViewMoviePoster = findViewById(R.id.RecyclerView_moviePoster);
         recyclerViewMoviePoster.setLayoutManager(
@@ -133,13 +133,18 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                         super.onScrolled(recyclerView, dx, dy);
+
+                        // When it's filtering mode, don't fetch new data.
+                        if (ApplicationService.getInstance().shouldFilterByFavorite()) return;
+
                         GridLayoutManager layoutManager =
                                 (GridLayoutManager) recyclerView.getLayoutManager();
 
                         if (!applicationViewModel.isLoading().getValue()
                                 && layoutManager != null
                                 && layoutManager.findLastCompletelyVisibleItemPosition()
-                                        == modelViewModel.getMovies().getValue().size() - 1) {
+                                        == ApplicationService.getInstance().getMovies().size()
+                                                - 1) {
                             applicationViewModel.setPage(
                                     applicationViewModel.getCurrentPage().getValue() + 1);
                         }
@@ -198,11 +203,15 @@ public class MainActivity extends AppCompatActivity {
                             Call<MovieResponse> call, Response<MovieResponse> response) {
                         MovieResponse movieResponse = response.body();
 
+                        ApplicationService applicationService = ApplicationService.getInstance();
                         if (reset) {
-                            modelViewModel.clearMovies();
+
+                            applicationService.clearMovies();
                         }
 
-                        modelViewModel.addMovies(
+                        Set<Long> favoriteMovieIds = applicationService.getFavoriteMovieIds();
+
+                        applicationService.addMovies(
                                 movieResponse.getResults().stream()
                                         .map(m -> Movie.fromMovieResponseItem(m))
                                         .collect(Collectors.toList()));
@@ -223,6 +232,26 @@ public class MainActivity extends AppCompatActivity {
         new MenuInflater(this).inflate(R.menu.main, menu);
         popularMoviesMenuItem = menu.findItem(R.id.action_sort_popularity);
         highestRatingMoviesMenuItem = menu.findItem(R.id.action_sort_rating);
+        filterByFavoriteMenuItem = menu.findItem(R.id.action_filter_by_favorite);
+
+        ApplicationService.getInstance()
+                .getFilterByFavoriteObservable()
+                .doOnNext(
+                        newState -> {
+                            Log.d(
+                                    TAG,
+                                    String.format(
+                                            "\n=========================== newState => %s",
+                                            newState.toString()));
+                        })
+                .subscribe(
+                        newState -> {
+                            filterByFavoriteMenuItem.setChecked(newState);
+
+                            if (movieDetailAdapter != null) {
+                                movieDetailAdapter.notifyDataSetChanged();
+                            }
+                        });
 
         toggleMenu(applicationViewModel.getFetchTypeLiveData().getValue());
         return true;
@@ -238,6 +267,10 @@ public class MainActivity extends AppCompatActivity {
             case R.id.action_sort_rating:
                 this.applicationViewModel.setMovieServiceFetchType(
                         MovieService.FetchType.TOP_RATED_MOVIES);
+                return true;
+            case R.id.action_filter_by_favorite:
+                boolean shouldFilterByFavorite = !filterByFavoriteMenuItem.isChecked();
+                ApplicationService.getInstance().setFilterByFavorite(shouldFilterByFavorite);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

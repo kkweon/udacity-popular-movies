@@ -1,5 +1,6 @@
 package com.example.popularmovies;
 
+import com.example.popularmovies.pojos.moviedetails.MovieDetailsResponse;
 import com.example.popularmovies.pojos.movielist.MovieResponse;
 import com.example.popularmovies.pojos.moviereviews.MovieReviewsResponse;
 import com.example.popularmovies.pojos.movievideos.MovieVideosResponse;
@@ -17,6 +18,12 @@ public interface MovieService extends Serializable {
         POPULAR_MOVIES,
         TOP_RATED_MOVIES
     }
+
+    @GET("movie/{movie_id}")
+    Call<MovieDetailsResponse> getMovieDetails(
+            @Path("movie_id") long movieId,
+            @Query("api_key") String apiKey,
+            @Query("language") String language);
 
     @GET("movie/popular")
     Call<MovieResponse> getPopularMovies(
