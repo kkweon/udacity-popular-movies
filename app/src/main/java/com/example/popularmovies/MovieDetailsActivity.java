@@ -16,6 +16,8 @@ import com.example.popularmovies.pojos.moviereviews.MovieReviewsResponseItem;
 import com.example.popularmovies.pojos.movievideos.MovieVideosResponse;
 import com.example.popularmovies.pojos.movievideos.MovieVideosResponseItem;
 import com.squareup.picasso.Picasso;
+import io.reactivex.rxjava3.disposables.Disposable;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,10 +43,14 @@ public class MovieDetailsActivity extends AppCompatActivity {
     private RecyclerView movieDetailsReviews;
     private Button movieDetailsFavoriteButton;
 
+    private List<Disposable> subscriptions;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_details);
+
+        subscriptions = new ArrayList<>();
 
         // Attach XML elements.
         movieDetailsPoster = findViewById(R.id.ImageView_movieDetailsPoster);
@@ -66,16 +72,17 @@ public class MovieDetailsActivity extends AppCompatActivity {
         if (intent.hasExtra("Movie")) {
             movie = (Movie) intent.getSerializableExtra("Movie");
 
-            ApplicationService.getInstance()
-                    .getFavoriteMovieIdsObservable()
-                    .subscribe(
-                            favoriteMovieIds -> {
-                                if (favoriteMovieIds.contains(movie.getId())) {
-                                    setFavorite(true);
-                                } else {
-                                    setFavorite(false);
-                                }
-                            });
+            subscriptions.add(
+                    ApplicationService.getInstance()
+                            .getFavoriteMovieIdsObservable()
+                            .subscribe(
+                                    favoriteMovieIds -> {
+                                        if (favoriteMovieIds.contains(movie.getId())) {
+                                            setFavorite(true);
+                                        } else {
+                                            setFavorite(false);
+                                        }
+                                    }));
 
             Picasso.get().load(movie.getThumbnail()).fit().into(movieDetailsPoster);
             movieDetailsRating.setText(movie.getUserRating().toString());
@@ -208,5 +215,11 @@ public class MovieDetailsActivity extends AppCompatActivity {
         if (intent.resolveActivity(getPackageManager()) != null) {
             startActivity(intent);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        subscriptions.forEach(s -> s.dispose());
     }
 }

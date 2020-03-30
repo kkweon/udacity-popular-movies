@@ -10,12 +10,13 @@ import android.view.View;
 import android.widget.ProgressBar;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.example.popularmovies.pojos.Movie;
 import com.example.popularmovies.pojos.movielist.MovieResponse;
-import java.util.Set;
+import io.reactivex.rxjava3.disposables.Disposable;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -26,17 +27,20 @@ public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     private MovieDetailAdapter movieDetailAdapter;
-    private ApplicationViewModel applicationViewModel;
 
     private MenuItem popularMoviesMenuItem;
     private MenuItem highestRatingMoviesMenuItem;
     private RecyclerView recyclerViewMoviePoster;
     private ProgressBar progressBarLoading;
     private MenuItem filterByFavoriteMenuItem;
+    private ApplicationService applicationService = ApplicationService.getInstance();
+
+    private List<Disposable> subscriptions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        subscriptions = new ArrayList<>();
         setContentView(R.layout.activity_main);
 
         MainActivity context = this;
@@ -52,22 +56,22 @@ public class MainActivity extends AppCompatActivity {
                             startActivity(intent);
                         });
 
-        // This contains the current movie ranking setting (sort by popularity or rating).
-        applicationViewModel = new ViewModelProvider(this).get(ApplicationViewModel.class);
-
         // This contains LiveData<List<Movie>>. This is the single source of truth for movies data
         // in the UI.
-        ApplicationService.getInstance()
-                .getMoviesObservable()
-                .subscribe(
-                        movies -> {
-                            movieDetailAdapter.setMovies(movies);
-                            movieDetailAdapter.notifyDataSetChanged();
-                        });
+        final ApplicationService applicationService = ApplicationService.getInstance();
+        subscriptions.add(
+                applicationService
+                        .getMoviesObservable()
+                        .subscribe(
+                                movies -> {
+                                    movieDetailAdapter.setMovies(movies);
+                                    movieDetailAdapter.notifyDataSetChanged();
+                                }));
 
-        ApplicationService.getInstance()
-                .getFavoriteMovieIdsObservable()
-                .subscribe(ids -> movieDetailAdapter.notifyDataSetChanged());
+        subscriptions.add(
+                applicationService
+                        .getFavoriteMovieIdsObservable()
+                        .subscribe(ids -> movieDetailAdapter.notifyDataSetChanged()));
 
         recyclerViewMoviePoster = findViewById(R.id.RecyclerView_moviePoster);
         recyclerViewMoviePoster.setLayoutManager(
@@ -81,51 +85,51 @@ public class MainActivity extends AppCompatActivity {
         MovieService movieService = MovieManager.getMovieService();
 
         // Load the movies by popularity.
-        applicationViewModel
-                .getFetchTypeLiveData()
-                .observe(
-                        this,
-                        fetchType -> {
-                            Log.v(TAG, "FetchType is updated");
-                            fillMovieViewModel(
-                                    movieService,
-                                    applicationViewModel.getCurrentPage().getValue(),
-                                    fetchType,
-                                    true);
-                            toggleMenu(fetchType);
-                        });
-
+        subscriptions.add(
+                applicationService
+                        .getFetchTypeObservable()
+                        .subscribe(
+                                fetchType -> {
+                                    Log.v(TAG, "FetchType is updated");
+                                    fillMovieViewModel(
+                                            movieService,
+                                            applicationService.getCurrentPage(),
+                                            fetchType,
+                                            true);
+                                    toggleMenu(fetchType);
+                                }));
         // If the page changes (scroll to the end), it should fetch the next page.
-        applicationViewModel
-                .getCurrentPage()
-                .observe(
-                        this,
-                        newPage -> {
-                            // The initialization will be handled when we subscribe to FetchType.
-                            if (newPage == 1) return;
-                            Log.v(
-                                    TAG,
-                                    String.format(
-                                            "Fetching next page movie data (newPage => %d)",
-                                            newPage));
-                            fillMovieViewModel(
-                                    movieService,
-                                    newPage,
-                                    applicationViewModel.getFetchTypeLiveData().getValue(),
-                                    false);
-                        });
+        subscriptions.add(
+                applicationService
+                        .getCurrentPageObservable()
+                        .subscribe(
+                                newPage -> {
+                                    // The initialization will be handled when we subscribe to
+                                    // FetchType.
+                                    if (newPage == 1) return;
+                                    Log.v(
+                                            TAG,
+                                            String.format(
+                                                    "Fetching next page movie data (newPage => %d)",
+                                                    newPage));
+                                    fillMovieViewModel(
+                                            movieService,
+                                            newPage,
+                                            applicationService.getFetchType(),
+                                            false);
+                                }));
 
-        applicationViewModel
-                .isLoading()
-                .observe(
-                        this,
-                        isLoading -> {
-                            if (isLoading) {
-                                progressBarLoading.setVisibility(View.VISIBLE);
-                            } else {
-                                progressBarLoading.setVisibility(View.GONE);
-                            }
-                        });
+        subscriptions.add(
+                applicationService
+                        .getIsLoadingObservable()
+                        .subscribe(
+                                isLoading -> {
+                                    if (isLoading) {
+                                        progressBarLoading.setVisibility(View.VISIBLE);
+                                    } else {
+                                        progressBarLoading.setVisibility(View.GONE);
+                                    }
+                                }));
 
         recyclerViewMoviePoster = findViewById(R.id.RecyclerView_moviePoster);
         recyclerViewMoviePoster.addOnScrollListener(
@@ -135,18 +139,16 @@ public class MainActivity extends AppCompatActivity {
                         super.onScrolled(recyclerView, dx, dy);
 
                         // When it's filtering mode, don't fetch new data.
-                        if (ApplicationService.getInstance().shouldFilterByFavorite()) return;
+                        if (applicationService.shouldFilterByFavorite()) return;
 
                         GridLayoutManager layoutManager =
                                 (GridLayoutManager) recyclerView.getLayoutManager();
 
-                        if (!applicationViewModel.isLoading().getValue()
+                        if (!applicationService.getIsLoading()
                                 && layoutManager != null
                                 && layoutManager.findLastCompletelyVisibleItemPosition()
-                                        == ApplicationService.getInstance().getMovies().size()
-                                                - 1) {
-                            applicationViewModel.setPage(
-                                    applicationViewModel.getCurrentPage().getValue() + 1);
+                                        == applicationService.getMovies().size() - 1) {
+                            applicationService.setPage(applicationService.getCurrentPage() + 1);
                         }
                     }
                 });
@@ -177,8 +179,14 @@ public class MainActivity extends AppCompatActivity {
 
     private void fillMovieViewModel(
             MovieService movieService, int page, MovieService.FetchType fetchType, boolean reset) {
+
+        // If "Filter by favorite mode" don't need to fetch movies.
+        if (applicationService.shouldFilterByFavorite()) {
+            return;
+        }
+
         Call<MovieResponse> moviesCall = null;
-        applicationViewModel.setLoading(true);
+        applicationService.setLoading(true);
         if (fetchType == MovieService.FetchType.POPULAR_MOVIES) {
 
             moviesCall =
@@ -205,24 +213,21 @@ public class MainActivity extends AppCompatActivity {
 
                         ApplicationService applicationService = ApplicationService.getInstance();
                         if (reset) {
-
                             applicationService.clearMovies();
                         }
-
-                        Set<Long> favoriteMovieIds = applicationService.getFavoriteMovieIds();
 
                         applicationService.addMovies(
                                 movieResponse.getResults().stream()
                                         .map(m -> Movie.fromMovieResponseItem(m))
                                         .collect(Collectors.toList()));
 
-                        applicationViewModel.setLoading(false);
+                        applicationService.setLoading(false);
                     }
 
                     @Override
                     public void onFailure(Call<MovieResponse> call, Throwable t) {
                         Log.v(TAG, String.format("Failed to fetch movies data"));
-                        applicationViewModel.setLoading(false);
+                        applicationService.setLoading(false);
                     }
                 });
     }
@@ -234,26 +239,27 @@ public class MainActivity extends AppCompatActivity {
         highestRatingMoviesMenuItem = menu.findItem(R.id.action_sort_rating);
         filterByFavoriteMenuItem = menu.findItem(R.id.action_filter_by_favorite);
 
-        ApplicationService.getInstance()
-                .getFilterByFavoriteObservable()
-                .doOnNext(
-                        newState -> {
-                            Log.d(
-                                    TAG,
-                                    String.format(
-                                            "\n=========================== newState => %s",
-                                            newState.toString()));
-                        })
-                .subscribe(
-                        newState -> {
-                            filterByFavoriteMenuItem.setChecked(newState);
+        subscriptions.add(
+                ApplicationService.getInstance()
+                        .getFilterByFavoriteObservable()
+                        .doOnNext(
+                                newState -> {
+                                    Log.d(
+                                            TAG,
+                                            String.format(
+                                                    "\n=========================== newState => %s",
+                                                    newState.toString()));
+                                })
+                        .subscribe(
+                                newState -> {
+                                    filterByFavoriteMenuItem.setChecked(newState);
 
-                            if (movieDetailAdapter != null) {
-                                movieDetailAdapter.notifyDataSetChanged();
-                            }
-                        });
+                                    if (movieDetailAdapter != null) {
+                                        movieDetailAdapter.notifyDataSetChanged();
+                                    }
+                                }));
 
-        toggleMenu(applicationViewModel.getFetchTypeLiveData().getValue());
+        toggleMenu(applicationService.getFetchType());
         return true;
     }
 
@@ -261,11 +267,11 @@ public class MainActivity extends AppCompatActivity {
     public boolean onOptionsItemSelected(@NonNull MenuItem item) {
         switch (item.getItemId()) {
             case R.id.action_sort_popularity:
-                this.applicationViewModel.setMovieServiceFetchType(
+                this.applicationService.setMovieServiceFetchType(
                         MovieService.FetchType.POPULAR_MOVIES);
                 return true;
             case R.id.action_sort_rating:
-                this.applicationViewModel.setMovieServiceFetchType(
+                this.applicationService.setMovieServiceFetchType(
                         MovieService.FetchType.TOP_RATED_MOVIES);
                 return true;
             case R.id.action_filter_by_favorite:
@@ -275,5 +281,11 @@ public class MainActivity extends AppCompatActivity {
             default:
                 return super.onOptionsItemSelected(item);
         }
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        subscriptions.forEach(s -> s.dispose());
     }
 }

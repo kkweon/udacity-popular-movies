@@ -18,10 +18,17 @@ public class ApplicationService {
 
     private List<Movie> previousMovies = null;
 
+    private BehaviorSubject<MovieService.FetchType> fetchType;
+    private BehaviorSubject<Integer> currentPage;
+    private BehaviorSubject<Boolean> isLoading;
+
     private ApplicationService() {
         movies = BehaviorSubject.createDefault(new ArrayList<>());
         favoriteMovieIds = BehaviorSubject.createDefault(new HashSet<>());
         shouldFilterByFavorite = BehaviorSubject.createDefault(false);
+        fetchType = BehaviorSubject.createDefault(MovieService.FetchType.POPULAR_MOVIES);
+        currentPage = BehaviorSubject.createDefault(1);
+        isLoading = BehaviorSubject.createDefault(false);
     }
 
     public void clearMovies() {
@@ -61,6 +68,15 @@ public class ApplicationService {
         Set<Long> oldSet = favoriteMovieIds.getValue();
         if (oldSet.contains(id)) {
             oldSet.remove(id);
+
+            if (shouldFilterByFavorite()) {
+                // remove from the current movies.
+                movies.onNext(
+                        movies.getValue().stream()
+                                .filter(m -> m.getId() != id)
+                                .collect(Collectors.toList()));
+            }
+
         } else {
             oldSet.add(id);
         }
@@ -95,5 +111,41 @@ public class ApplicationService {
 
     public boolean shouldFilterByFavorite() {
         return shouldFilterByFavorite.getValue();
+    }
+
+    public Observable<MovieService.FetchType> getFetchTypeObservable() {
+        return fetchType;
+    }
+
+    public Observable<Integer> getCurrentPageObservable() {
+        return currentPage;
+    }
+
+    public int getCurrentPage() {
+        return currentPage.getValue();
+    }
+
+    public MovieService.FetchType getFetchType() {
+        return fetchType.getValue();
+    }
+
+    public Observable<Boolean> getIsLoadingObservable() {
+        return isLoading;
+    }
+
+    public boolean getIsLoading() {
+        return isLoading.getValue();
+    }
+
+    public void setPage(int newPage) {
+        currentPage.onNext(newPage);
+    }
+
+    public void setLoading(boolean nextIsLoading) {
+        isLoading.onNext(nextIsLoading);
+    }
+
+    public void setMovieServiceFetchType(MovieService.FetchType nextFetchType) {
+        fetchType.onNext(nextFetchType);
     }
 }
