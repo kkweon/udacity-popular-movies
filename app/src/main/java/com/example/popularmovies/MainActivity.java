@@ -8,16 +8,21 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
+
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
 import com.example.popularmovies.pojos.Movie;
 import com.example.popularmovies.pojos.movielist.MovieResponse;
+
 import io.reactivex.rxjava3.disposables.Disposable;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
+
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -26,14 +31,14 @@ public class MainActivity extends AppCompatActivity {
 
     private static final String TAG = MainActivity.class.getSimpleName();
 
-    private MovieDetailAdapter movieDetailAdapter;
+    private MoviePosterAdapter movieDetailAdapter;
 
     private MenuItem popularMoviesMenuItem;
     private MenuItem highestRatingMoviesMenuItem;
     private RecyclerView recyclerViewMoviePoster;
     private ProgressBar progressBarLoading;
     private MenuItem filterByFavoriteMenuItem;
-    private ApplicationService applicationService = ApplicationService.getInstance();
+    final private ApplicationService applicationService = ApplicationService.getInstance();
 
     private List<Disposable> subscriptions;
 
@@ -45,20 +50,20 @@ public class MainActivity extends AppCompatActivity {
 
         MainActivity context = this;
 
+        // When loading the movies, we show the progress bar.
         progressBarLoading = findViewById(R.id.ProgressBar_loading);
+        recyclerViewMoviePoster = findViewById(R.id.RecyclerView_moviePoster);
 
         // Store so we can manipulate when updating data.
         movieDetailAdapter =
-                new MovieDetailAdapter(
+                new MoviePosterAdapter(
                         m -> {
                             Intent intent = new Intent(context, MovieDetailsActivity.class);
                             intent.putExtra("Movie", m);
                             startActivity(intent);
                         });
 
-        // This contains LiveData<List<Movie>>. This is the single source of truth for movies data
-        // in the UI.
-        final ApplicationService applicationService = ApplicationService.getInstance();
+        // Every time `movies` changes in the ApplicationState, we update the view.
         subscriptions.add(
                 applicationService
                         .getMoviesObservable()
@@ -68,12 +73,14 @@ public class MainActivity extends AppCompatActivity {
                                     movieDetailAdapter.notifyDataSetChanged();
                                 }));
 
+        // Every time favorite movie list changes, we update the view.
         subscriptions.add(
                 applicationService
                         .getFavoriteMovieIdsObservable()
                         .subscribe(ids -> movieDetailAdapter.notifyDataSetChanged()));
 
-        recyclerViewMoviePoster = findViewById(R.id.RecyclerView_moviePoster);
+
+        // We compute the best number of columns on the fly.
         recyclerViewMoviePoster.setLayoutManager(
                 new GridLayoutManager(
                         this,
@@ -82,9 +89,12 @@ public class MainActivity extends AppCompatActivity {
                                 getResources().getDimension(R.dimen.movie_poster_width))));
         recyclerViewMoviePoster.setAdapter(movieDetailAdapter);
 
-        MovieService movieService = MovieManager.getMovieService();
 
-        // Load the movies by popularity.
+        // This is the API service that communicates with themoviedb.org.
+        MovieService movieService = MovieServiceFactory.getMovieService();
+
+        // The fetch type is the sort type (Sort by movie popularity or movie rating).
+        // Whenenver it changes, we update the view.
         subscriptions.add(
                 applicationService
                         .getFetchTypeObservable()
@@ -98,7 +108,8 @@ public class MainActivity extends AppCompatActivity {
                                             true);
                                     toggleMenu(fetchType);
                                 }));
-        // If the page changes (scroll to the end), it should fetch the next page.
+
+        // When a user scrolls to the bottom of the list, it will fetch a next page.
         subscriptions.add(
                 applicationService
                         .getCurrentPageObservable()
@@ -119,6 +130,7 @@ public class MainActivity extends AppCompatActivity {
                                             false);
                                 }));
 
+        // Set the progress bar while the data is loading.
         subscriptions.add(
                 applicationService
                         .getIsLoadingObservable()
@@ -131,7 +143,8 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 }));
 
-        recyclerViewMoviePoster = findViewById(R.id.RecyclerView_moviePoster);
+
+        // When a scroll reaches the end, it should fetch new data except it's "Favorite only" mode.
         recyclerViewMoviePoster.addOnScrollListener(
                 new RecyclerView.OnScrollListener() {
                     @Override
@@ -139,7 +152,8 @@ public class MainActivity extends AppCompatActivity {
                         super.onScrolled(recyclerView, dx, dy);
 
                         // When it's filtering mode, don't fetch new data.
-                        if (applicationService.shouldFilterByFavorite()) return;
+                        if (applicationService.shouldFilterByFavorite())
+                            return;
 
                         GridLayoutManager layoutManager =
                                 (GridLayoutManager) recyclerView.getLayoutManager();
@@ -147,7 +161,8 @@ public class MainActivity extends AppCompatActivity {
                         if (!applicationService.getIsLoading()
                                 && layoutManager != null
                                 && layoutManager.findLastCompletelyVisibleItemPosition()
-                                        == applicationService.getMovies().size() - 1) {
+                                == applicationService.getMovies()
+                                                     .size() - 1) {
                             applicationService.setPage(applicationService.getCurrentPage() + 1);
                         }
                     }
@@ -217,9 +232,10 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         applicationService.addMovies(
-                                movieResponse.getResults().stream()
-                                        .map(m -> Movie.fromMovieResponseItem(m))
-                                        .collect(Collectors.toList()));
+                                movieResponse.getResults()
+                                             .stream()
+                                             .map(m -> Movie.fromMovieResponseItem(m))
+                                             .collect(Collectors.toList()));
 
                         applicationService.setLoading(false);
                     }
@@ -241,24 +257,18 @@ public class MainActivity extends AppCompatActivity {
 
         subscriptions.add(
                 ApplicationService.getInstance()
-                        .getFilterByFavoriteObservable()
-                        .doOnNext(
-                                newState -> {
-                                    Log.d(
-                                            TAG,
-                                            String.format(
-                                                    "\n=========================== newState => %s",
-                                                    newState.toString()));
-                                })
-                        .subscribe(
-                                newState -> {
-                                    filterByFavoriteMenuItem.setChecked(newState);
+                                  .getFilterByFavoriteObservable()
+                                  .subscribe(
+                                          newState -> {
+                                              filterByFavoriteMenuItem.setChecked(newState);
 
-                                    if (movieDetailAdapter != null) {
-                                        movieDetailAdapter.notifyDataSetChanged();
-                                    }
-                                }));
+                                              if (movieDetailAdapter != null) {
+                                                  movieDetailAdapter.notifyDataSetChanged();
+                                              }
+                                          }));
 
+        // Handles such that it doesn't show the both sort options since the current view is already sorted by either rule.
+        // Then, it hides the current sort option.
         toggleMenu(applicationService.getFetchType());
         return true;
     }
@@ -276,7 +286,8 @@ public class MainActivity extends AppCompatActivity {
                 return true;
             case R.id.action_filter_by_favorite:
                 boolean shouldFilterByFavorite = !filterByFavoriteMenuItem.isChecked();
-                ApplicationService.getInstance().setFilterByFavorite(shouldFilterByFavorite);
+                ApplicationService.getInstance()
+                                  .setFilterByFavorite(shouldFilterByFavorite);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

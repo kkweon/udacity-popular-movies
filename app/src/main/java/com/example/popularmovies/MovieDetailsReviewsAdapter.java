@@ -9,6 +9,11 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.popularmovies.pojos.moviereviews.MovieReviewsResponseItem;
 import java.util.List;
 
+
+/**
+ * On the movie details page,
+ * we show reviews by random people. This adapter is responsible for the view.
+ */
 public class MovieDetailsReviewsAdapter
         extends RecyclerView.Adapter<MovieDetailsReviewsAdapter.ViewHolder> {
 

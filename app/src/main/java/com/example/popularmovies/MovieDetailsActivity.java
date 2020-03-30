@@ -25,6 +25,12 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
+
+/**
+ * Movie Details Page.
+ *
+ * This is the second activity where a user can see the detailed information of the movie.
+ */
 public class MovieDetailsActivity extends AppCompatActivity {
 
     public static final String YOUTUBE = "YouTube";
@@ -90,7 +96,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
             movieDetailsTitle.setText(movie.getTitle());
             movieDetailsYear.setText(String.valueOf(movie.getReleaseDate().get(Calendar.YEAR)));
 
-            movieService = MovieManager.getMovieService();
+            movieService = MovieServiceFactory.getMovieService();
 
             // Register click listener to the "Add to favorite" button.
             movieDetailsFavoriteButton.setOnClickListener(

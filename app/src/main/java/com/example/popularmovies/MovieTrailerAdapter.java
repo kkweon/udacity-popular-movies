@@ -10,7 +10,10 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.popularmovies.pojos.movievideos.MovieVideosResponseItem;
 import java.util.List;
 
-class MovieTrailerAdapter extends RecyclerView.Adapter<MovieTrailerAdapter.ViewHolder> {
+/**
+ * For movie trailers on the details page.
+ */
+public class MovieTrailerAdapter extends RecyclerView.Adapter<MovieTrailerAdapter.ViewHolder> {
     private List<MovieVideosResponseItem> videosResponseItems;
     private OnPlayButtonClickListener listener;
 

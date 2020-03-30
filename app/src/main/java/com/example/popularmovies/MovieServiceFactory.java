@@ -3,7 +3,10 @@ package com.example.popularmovies;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
-public class MovieManager {
+/**
+ * This returns a MovieService so retrofit doesn't need to be created every time.
+ */
+public class MovieServiceFactory {
     private static Retrofit retrofit;
 
     public static MovieService getMovieService() {

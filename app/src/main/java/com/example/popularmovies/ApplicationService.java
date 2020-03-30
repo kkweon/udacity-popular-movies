@@ -9,6 +9,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * Global application state is managed here using the reactive pattern.
+ * This is the single source of truth.
+ */
 public class ApplicationService {
     private static ApplicationService instance = null;
 

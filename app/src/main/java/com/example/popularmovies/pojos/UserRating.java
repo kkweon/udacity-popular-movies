@@ -3,6 +3,9 @@ package com.example.popularmovies.pojos;
 import java.io.Serializable;
 import lombok.Data;
 
+/**
+ * We wrap user rating in this class to verify the data.
+ */
 @Data
 public class UserRating implements Serializable {
     double score;
