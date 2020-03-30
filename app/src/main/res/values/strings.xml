@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Popular Movies</string>
+    <string name="language">en-US</string>
+    <string name="country">US</string>
 </resources>
