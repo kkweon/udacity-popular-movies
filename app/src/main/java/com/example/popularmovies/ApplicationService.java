@@ -1,7 +1,11 @@
 package com.example.popularmovies;
 
+import android.content.Context;
+import com.example.popularmovies.persistence.FavoriteMovie;
+import com.example.popularmovies.persistence.FavoriteMovieRepository;
 import com.example.popularmovies.pojos.Movie;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -10,8 +14,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * Global application state is managed here using the reactive pattern.
- * This is the single source of truth.
+ * Global application state is managed here using the reactive pattern. This is the single source of
+ * truth.
  */
 public class ApplicationService {
     private static ApplicationService instance = null;
@@ -22,17 +26,30 @@ public class ApplicationService {
 
     private List<Movie> previousMovies = null;
 
-    private BehaviorSubject<MovieService.FetchType> fetchType;
+    private BehaviorSubject<MovieRepository.FetchType> fetchType;
     private BehaviorSubject<Integer> currentPage;
     private BehaviorSubject<Boolean> isLoading;
+    private static FavoriteMovieRepository favoriteMovieRepository;
 
     private ApplicationService() {
         movies = BehaviorSubject.createDefault(new ArrayList<>());
         favoriteMovieIds = BehaviorSubject.createDefault(new HashSet<>());
         shouldFilterByFavorite = BehaviorSubject.createDefault(false);
-        fetchType = BehaviorSubject.createDefault(MovieService.FetchType.POPULAR_MOVIES);
+        fetchType = BehaviorSubject.createDefault(MovieRepository.FetchType.POPULAR_MOVIES);
         currentPage = BehaviorSubject.createDefault(1);
         isLoading = BehaviorSubject.createDefault(false);
+
+        // Load Favorite Movies when initializing.
+        favoriteMovieRepository
+                .getFavoriteMovies()
+                .map(movies -> movies.stream().map(m -> m.getId()))
+                .subscribeOn(Schedulers.io())
+                .subscribe(movies -> favoriteMovieIds.onNext(movies.collect(Collectors.toSet())));
+    }
+
+    // Initialize the database. Should be called only once.
+    public static void initDatabase(Context context) {
+        favoriteMovieRepository = new FavoriteMovieRepository(context);
     }
 
     public void clearMovies() {
@@ -71,20 +88,32 @@ public class ApplicationService {
     public void toggleFavoriteMovieIds(long id) {
         Set<Long> oldSet = favoriteMovieIds.getValue();
         if (oldSet.contains(id)) {
-            oldSet.remove(id);
-
-            if (shouldFilterByFavorite()) {
-                // remove from the current movies.
-                movies.onNext(
-                        movies.getValue().stream()
-                                .filter(m -> m.getId() != id)
-                                .collect(Collectors.toList()));
-            }
+            favoriteMovieRepository
+                    .deleteFavoriteMovie(new FavoriteMovie(id))
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(
+                            integer -> {
+                                oldSet.remove(id);
+                                if (shouldFilterByFavorite()) {
+                                    favoriteMovieIds.onNext(oldSet);
+                                    // remove from the current movies.
+                                    movies.onNext(
+                                            movies.getValue().stream()
+                                                    .filter(m -> m.getId() != id)
+                                                    .collect(Collectors.toList()));
+                                }
+                            });
 
         } else {
-            oldSet.add(id);
+            favoriteMovieRepository
+                    .insertFavoriteMovie(new FavoriteMovie(id))
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(
+                            intger -> {
+                                oldSet.add(id);
+                                favoriteMovieIds.onNext(oldSet);
+                            });
         }
-        favoriteMovieIds.onNext(oldSet);
     }
 
     public void setFilterByFavorite(boolean nextState) {
@@ -95,10 +124,7 @@ public class ApplicationService {
             previousMovies = movies.getValue();
             List<Movie> favoriteMovies =
                     movies.getValue().stream()
-                            .filter(
-                                    m -> {
-                                        return favoriteMovieIds.getValue().contains(m.getId());
-                                    })
+                            .filter(m -> favoriteMovieIds.getValue().contains(m.getId()))
                             .collect(Collectors.toList());
             movies.onNext(favoriteMovies);
         } else {
@@ -117,7 +143,7 @@ public class ApplicationService {
         return shouldFilterByFavorite.getValue();
     }
 
-    public Observable<MovieService.FetchType> getFetchTypeObservable() {
+    public Observable<MovieRepository.FetchType> getFetchTypeObservable() {
         return fetchType;
     }
 
@@ -129,7 +155,7 @@ public class ApplicationService {
         return currentPage.getValue();
     }
 
-    public MovieService.FetchType getFetchType() {
+    public MovieRepository.FetchType getFetchType() {
         return fetchType.getValue();
     }
 
@@ -149,7 +175,7 @@ public class ApplicationService {
         isLoading.onNext(nextIsLoading);
     }
 
-    public void setMovieServiceFetchType(MovieService.FetchType nextFetchType) {
+    public void setMovieServiceFetchType(MovieRepository.FetchType nextFetchType) {
         fetchType.onNext(nextFetchType);
     }
 }

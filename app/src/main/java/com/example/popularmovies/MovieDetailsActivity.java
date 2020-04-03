@@ -16,6 +16,7 @@ import com.example.popularmovies.pojos.moviereviews.MovieReviewsResponseItem;
 import com.example.popularmovies.pojos.movievideos.MovieVideosResponse;
 import com.example.popularmovies.pojos.movievideos.MovieVideosResponseItem;
 import com.squareup.picasso.Picasso;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.disposables.Disposable;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -25,11 +26,10 @@ import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
 
-
 /**
  * Movie Details Page.
  *
- * This is the second activity where a user can see the detailed information of the movie.
+ * <p>This is the second activity where a user can see the detailed information of the movie.
  */
 public class MovieDetailsActivity extends AppCompatActivity {
 
@@ -41,7 +41,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
     private TextView movieDetailsRating;
     private TextView movieDetailsSynopsis;
     private TextView movieDetailsTitle;
-    private MovieService movieService;
+    private MovieRepository movieRepository;
     private TextView textViewRunningTime;
     private TextView movieDetailsYear;
 
@@ -81,6 +81,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
             subscriptions.add(
                     ApplicationService.getInstance()
                             .getFavoriteMovieIdsObservable()
+                            .observeOn(AndroidSchedulers.mainThread())
                             .subscribe(
                                     favoriteMovieIds -> {
                                         if (favoriteMovieIds.contains(movie.getId())) {
@@ -96,14 +97,14 @@ public class MovieDetailsActivity extends AppCompatActivity {
             movieDetailsTitle.setText(movie.getTitle());
             movieDetailsYear.setText(String.valueOf(movie.getReleaseDate().get(Calendar.YEAR)));
 
-            movieService = MovieServiceFactory.getMovieService();
+            movieRepository = MovieRepositoryFactory.getMovieRepository();
 
             // Register click listener to the "Add to favorite" button.
             movieDetailsFavoriteButton.setOnClickListener(
                     v -> ApplicationService.getInstance().toggleFavoriteMovieIds(movie.getId()));
 
             // Get running time
-            movieService
+            movieRepository
                     .getMovieDetails(
                             movie.getId(),
                             BuildConfig.TMDB_API_KEY,
@@ -126,7 +127,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
                             });
 
             // Get trailers for the movies.
-            movieService
+            movieRepository
                     .getVideos(
                             movie.getId(),
                             BuildConfig.TMDB_API_KEY,
@@ -153,7 +154,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
                             });
 
             // Get reviews for this movie.
-            movieService
+            movieRepository
                     .getReviews(
                             movie.getId(),
                             BuildConfig.TMDB_API_KEY,

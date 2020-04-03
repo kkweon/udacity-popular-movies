@@ -7,10 +7,7 @@ import java.util.Locale;
 import lombok.Builder;
 import lombok.Data;
 
-/**
- * This is the actual view model used in the UI.
- * Select only interested fields to save memory.
- */
+/** This is the actual view model used in the UI. Select only interested fields to save memory. */
 @Data
 @Builder
 public class Movie implements Serializable {

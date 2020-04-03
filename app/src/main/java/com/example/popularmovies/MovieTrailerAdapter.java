@@ -10,9 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.example.popularmovies.pojos.movievideos.MovieVideosResponseItem;
 import java.util.List;
 
-/**
- * For movie trailers on the details page.
- */
+/** For movie trailers on the details page. */
 public class MovieTrailerAdapter extends RecyclerView.Adapter<MovieTrailerAdapter.ViewHolder> {
     private List<MovieVideosResponseItem> videosResponseItems;
     private OnPlayButtonClickListener listener;
@@ -54,13 +52,7 @@ public class MovieTrailerAdapter extends RecyclerView.Adapter<MovieTrailerAdapte
         }
 
         public void bind(MovieVideosResponseItem movieVideosResponseItem) {
-            imageButtonToYouTube.setOnClickListener(
-                    new View.OnClickListener() {
-                        @Override
-                        public void onClick(View v) {
-                            listener.onClick(movieVideosResponseItem);
-                        }
-                    });
+            imageButtonToYouTube.setOnClickListener(v -> listener.onClick(movieVideosResponseItem));
             textViewTitle.setText(movieVideosResponseItem.name);
         }
     }

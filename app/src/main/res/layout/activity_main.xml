@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/FrameLayout_main"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/FrameLayout_main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context=".MainActivity">
@@ -9,12 +9,13 @@
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/RecyclerView_moviePoster"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"></androidx.recyclerview.widget.RecyclerView>
+        android:layout_height="wrap_content" />
 
     <ProgressBar
         android:id="@+id/ProgressBar_loading"
         android:layout_width="100dp"
         android:layout_height="100dp"
         android:layout_gravity="center"
-        android:visibility="invisible" />
+        android:visibility="invisible"
+        tools:visibility="visible" />
 </FrameLayout>

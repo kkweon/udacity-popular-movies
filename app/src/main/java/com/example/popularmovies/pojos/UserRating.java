@@ -1,11 +1,10 @@
 package com.example.popularmovies.pojos;
 
+import androidx.annotation.NonNull;
 import java.io.Serializable;
 import lombok.Data;
 
-/**
- * We wrap user rating in this class to verify the data.
- */
+/** We wrap user rating in this class to verify the data. */
 @Data
 public class UserRating implements Serializable {
     double score;
@@ -20,6 +19,7 @@ public class UserRating implements Serializable {
                 String.format("score must be between 0 and 10 (inclusive). But, it was %f", score));
     }
 
+    @NonNull
     @Override
     public String toString() {
         return String.format("%.1f/10", score);

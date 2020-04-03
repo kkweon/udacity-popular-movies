@@ -8,21 +8,16 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
-
+import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-
 import com.example.popularmovies.pojos.Movie;
 import com.example.popularmovies.pojos.movielist.MovieResponse;
-
-import io.reactivex.rxjava3.disposables.Disposable;
-
-import java.util.ArrayList;
-import java.util.List;
+import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import java.util.stream.Collectors;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -38,14 +33,19 @@ public class MainActivity extends AppCompatActivity {
     private RecyclerView recyclerViewMoviePoster;
     private ProgressBar progressBarLoading;
     private MenuItem filterByFavoriteMenuItem;
-    final private ApplicationService applicationService = ApplicationService.getInstance();
+    private ApplicationService applicationService;
 
-    private List<Disposable> subscriptions;
+    private CompositeDisposable subscriptions;
+    private Toast mToast;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        subscriptions = new ArrayList<>();
+
+        ApplicationService.initDatabase(getApplicationContext());
+        applicationService = ApplicationService.getInstance();
+
+        subscriptions = new CompositeDisposable();
         setContentView(R.layout.activity_main);
 
         MainActivity context = this;
@@ -67,6 +67,7 @@ public class MainActivity extends AppCompatActivity {
         subscriptions.add(
                 applicationService
                         .getMoviesObservable()
+                        .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(
                                 movies -> {
                                     movieDetailAdapter.setMovies(movies);
@@ -77,8 +78,8 @@ public class MainActivity extends AppCompatActivity {
         subscriptions.add(
                 applicationService
                         .getFavoriteMovieIdsObservable()
+                        .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(ids -> movieDetailAdapter.notifyDataSetChanged()));
-
 
         // We compute the best number of columns on the fly.
         recyclerViewMoviePoster.setLayoutManager(
@@ -89,20 +90,20 @@ public class MainActivity extends AppCompatActivity {
                                 getResources().getDimension(R.dimen.movie_poster_width))));
         recyclerViewMoviePoster.setAdapter(movieDetailAdapter);
 
-
         // This is the API service that communicates with themoviedb.org.
-        MovieService movieService = MovieServiceFactory.getMovieService();
+        MovieRepository movieRepository = MovieRepositoryFactory.getMovieRepository();
 
         // The fetch type is the sort type (Sort by movie popularity or movie rating).
         // Whenenver it changes, we update the view.
         subscriptions.add(
                 applicationService
                         .getFetchTypeObservable()
+                        .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(
                                 fetchType -> {
                                     Log.v(TAG, "FetchType is updated");
                                     fillMovieViewModel(
-                                            movieService,
+                                            movieRepository,
                                             applicationService.getCurrentPage(),
                                             fetchType,
                                             true);
@@ -113,6 +114,7 @@ public class MainActivity extends AppCompatActivity {
         subscriptions.add(
                 applicationService
                         .getCurrentPageObservable()
+                        .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(
                                 newPage -> {
                                     // The initialization will be handled when we subscribe to
@@ -124,7 +126,7 @@ public class MainActivity extends AppCompatActivity {
                                                     "Fetching next page movie data (newPage => %d)",
                                                     newPage));
                                     fillMovieViewModel(
-                                            movieService,
+                                            movieRepository,
                                             newPage,
                                             applicationService.getFetchType(),
                                             false);
@@ -134,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
         subscriptions.add(
                 applicationService
                         .getIsLoadingObservable()
+                        .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(
                                 isLoading -> {
                                     if (isLoading) {
@@ -143,7 +146,6 @@ public class MainActivity extends AppCompatActivity {
                                     }
                                 }));
 
-
         // When a scroll reaches the end, it should fetch new data except it's "Favorite only" mode.
         recyclerViewMoviePoster.addOnScrollListener(
                 new RecyclerView.OnScrollListener() {
@@ -152,8 +154,7 @@ public class MainActivity extends AppCompatActivity {
                         super.onScrolled(recyclerView, dx, dy);
 
                         // When it's filtering mode, don't fetch new data.
-                        if (applicationService.shouldFilterByFavorite())
-                            return;
+                        if (applicationService.shouldFilterByFavorite()) return;
 
                         GridLayoutManager layoutManager =
                                 (GridLayoutManager) recyclerView.getLayoutManager();
@@ -161,8 +162,7 @@ public class MainActivity extends AppCompatActivity {
                         if (!applicationService.getIsLoading()
                                 && layoutManager != null
                                 && layoutManager.findLastCompletelyVisibleItemPosition()
-                                == applicationService.getMovies()
-                                                     .size() - 1) {
+                                        == applicationService.getMovies().size() - 1) {
                             applicationService.setPage(applicationService.getCurrentPage() + 1);
                         }
                     }
@@ -175,13 +175,13 @@ public class MainActivity extends AppCompatActivity {
      * <p>For example, if the movies are sorted by popularity, then show the "Sort by rating" option
      * and hide "Sort by popularity" menu item as it's redundant.
      *
-     * @param fetchType
+     * @param fetchType Could be POPULAR_MOVIES or TOP_RATED_MOVIES
      */
-    private void toggleMenu(MovieService.FetchType fetchType) {
+    private void toggleMenu(MovieRepository.FetchType fetchType) {
         if (popularMoviesMenuItem == null || highestRatingMoviesMenuItem == null) {
             return;
         }
-        if (fetchType == MovieService.FetchType.POPULAR_MOVIES) {
+        if (fetchType == MovieRepository.FetchType.POPULAR_MOVIES) {
             setTitle("Popular Movies");
             popularMoviesMenuItem.setVisible(false);
             highestRatingMoviesMenuItem.setVisible(true);
@@ -193,26 +193,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void fillMovieViewModel(
-            MovieService movieService, int page, MovieService.FetchType fetchType, boolean reset) {
+            MovieRepository movieRepository,
+            int page,
+            MovieRepository.FetchType fetchType,
+            boolean reset) {
 
         // If "Filter by favorite mode" don't need to fetch movies.
         if (applicationService.shouldFilterByFavorite()) {
             return;
         }
 
-        Call<MovieResponse> moviesCall = null;
+        Call<MovieResponse> moviesCall;
         applicationService.setLoading(true);
-        if (fetchType == MovieService.FetchType.POPULAR_MOVIES) {
+        if (fetchType == MovieRepository.FetchType.POPULAR_MOVIES) {
 
             moviesCall =
-                    movieService.getPopularMovies(
+                    movieRepository.getPopularMovies(
                             BuildConfig.TMDB_API_KEY,
                             page,
                             getString(R.string.language),
                             getString(R.string.country));
         } else {
             moviesCall =
-                    movieService.getTopRatedMovies(
+                    movieRepository.getTopRatedMovies(
                             BuildConfig.TMDB_API_KEY,
                             page,
                             getString(R.string.language),
@@ -223,7 +226,7 @@ public class MainActivity extends AppCompatActivity {
                 new Callback<MovieResponse>() {
                     @Override
                     public void onResponse(
-                            Call<MovieResponse> call, Response<MovieResponse> response) {
+                            Call<MovieResponse> call, @NonNull Response<MovieResponse> response) {
                         MovieResponse movieResponse = response.body();
 
                         ApplicationService applicationService = ApplicationService.getInstance();
@@ -232,10 +235,9 @@ public class MainActivity extends AppCompatActivity {
                         }
 
                         applicationService.addMovies(
-                                movieResponse.getResults()
-                                             .stream()
-                                             .map(m -> Movie.fromMovieResponseItem(m))
-                                             .collect(Collectors.toList()));
+                                movieResponse.getResults().stream()
+                                        .map(m -> Movie.fromMovieResponseItem(m))
+                                        .collect(Collectors.toList()));
 
                         applicationService.setLoading(false);
                     }
@@ -244,8 +246,23 @@ public class MainActivity extends AppCompatActivity {
                     public void onFailure(Call<MovieResponse> call, Throwable t) {
                         Log.v(TAG, String.format("Failed to fetch movies data"));
                         applicationService.setLoading(false);
+                        showErrorMessage(t.getMessage());
                     }
                 });
+    }
+
+    private void showErrorMessage(String message) {
+        if (mToast != null) {
+            mToast.cancel();
+        }
+        mToast =
+                Toast.makeText(
+                        this,
+                        String.format(
+                                "Failed to fetch movie data(%s). Maybe check your internet connection?",
+                                message),
+                        Toast.LENGTH_SHORT);
+        mToast.show();
     }
 
     @Override
@@ -257,17 +274,19 @@ public class MainActivity extends AppCompatActivity {
 
         subscriptions.add(
                 ApplicationService.getInstance()
-                                  .getFilterByFavoriteObservable()
-                                  .subscribe(
-                                          newState -> {
-                                              filterByFavoriteMenuItem.setChecked(newState);
+                        .getFilterByFavoriteObservable()
+                        .observeOn(AndroidSchedulers.mainThread())
+                        .subscribe(
+                                newState -> {
+                                    filterByFavoriteMenuItem.setChecked(newState);
 
-                                              if (movieDetailAdapter != null) {
-                                                  movieDetailAdapter.notifyDataSetChanged();
-                                              }
-                                          }));
+                                    if (movieDetailAdapter != null) {
+                                        movieDetailAdapter.notifyDataSetChanged();
+                                    }
+                                }));
 
-        // Handles such that it doesn't show the both sort options since the current view is already sorted by either rule.
+        // Handles such that it doesn't show the both sort options since the current view is already
+        // sorted by either rule.
         // Then, it hides the current sort option.
         toggleMenu(applicationService.getFetchType());
         return true;
@@ -278,16 +297,15 @@ public class MainActivity extends AppCompatActivity {
         switch (item.getItemId()) {
             case R.id.action_sort_popularity:
                 this.applicationService.setMovieServiceFetchType(
-                        MovieService.FetchType.POPULAR_MOVIES);
+                        MovieRepository.FetchType.POPULAR_MOVIES);
                 return true;
             case R.id.action_sort_rating:
                 this.applicationService.setMovieServiceFetchType(
-                        MovieService.FetchType.TOP_RATED_MOVIES);
+                        MovieRepository.FetchType.TOP_RATED_MOVIES);
                 return true;
             case R.id.action_filter_by_favorite:
                 boolean shouldFilterByFavorite = !filterByFavoriteMenuItem.isChecked();
-                ApplicationService.getInstance()
-                                  .setFilterByFavorite(shouldFilterByFavorite);
+                ApplicationService.getInstance().setFilterByFavorite(shouldFilterByFavorite);
                 return true;
             default:
                 return super.onOptionsItemSelected(item);
@@ -297,6 +315,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        subscriptions.forEach(s -> s.dispose());
+        subscriptions.dispose();
     }
 }

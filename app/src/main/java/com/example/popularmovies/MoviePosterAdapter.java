@@ -10,10 +10,7 @@ import com.example.popularmovies.pojos.Movie;
 import com.squareup.picasso.Picasso;
 import java.util.List;
 
-
-/**
- * This adapter handles the movie poster grid on the main page.
- */
+/** This adapter handles the movie poster grid on the main page. */
 class MoviePosterAdapter extends RecyclerView.Adapter<MoviePosterAdapter.ViewHolder> {
     private List<Movie> movies;
     private final MovieDetailClickListener clickListener;

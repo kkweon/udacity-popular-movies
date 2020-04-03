@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
 
-    <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-        xmlns:tools="http://schemas.android.com/tools"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical"
@@ -20,13 +20,13 @@
             <TextView
                 android:id="@+id/TextView_movieDetailsTitle"
                 android:layout_width="match_parent"
-                android:layout_height="120dp"
-                android:fontFamily="Roboto"
+                android:layout_height="80dp"
+                android:fontFamily="sans-serif-light"
                 android:gravity="center_vertical"
-                android:text="Title"
-                android:textColor="#ffffff"
-                android:textFontWeight="300"
-                android:textSize="30sp" />
+                android:textColor="@android:color/white"
+                android:textSize="30sp"
+                tools:text="Movie Title" />
+
         </FrameLayout>
 
         <LinearLayout
@@ -38,6 +38,7 @@
                 android:id="@+id/ImageView_movieDetailsPoster"
                 android:layout_width="200dp"
                 android:layout_height="300dp"
+                tools:src="@android:drawable/screen_background_dark"
                 android:layout_gravity="center"
                 android:layout_marginRight="@dimen/movie_detail_margin_bottom" />
 
@@ -50,12 +51,14 @@
                     android:id="@+id/TextView_movieDetailsYear"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    tools:text="2020"
                     android:textSize="20sp" />
 
                 <TextView
                     android:id="@+id/TextView_detail_runningTime"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
+                    tools:text="120 min"
                     android:textStyle="italic" />
 
                 <LinearLayout
@@ -71,6 +74,7 @@
                         android:id="@+id/TextView_movieDetailsRating"
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
+                        tools:text="8.9/10"
                         android:layout_marginBottom="@dimen/movie_detail_margin_bottom"
                         android:textStyle="italic" />
                 </LinearLayout>
@@ -98,6 +102,7 @@
                 android:layout_marginBottom="@dimen/movie_detail_margin_bottom" />
 
 
+            <!-- Trailers -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -109,6 +114,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content" />
 
+
+            <View
+                android:id="@+id/divider"
+                android:layout_width="match_parent"
+                android:layout_height="3dp"
+                android:background="?android:attr/listDivider" />
+
+            <!-- Reviews-->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
