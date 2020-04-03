@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import com.google.gson.Gson;
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Calendar;
@@ -22,7 +23,7 @@ public class MovieResponseTest {
                                 .getResource("example_movie_response.json")
                                 .getFile());
         String mockJson =
-                new String(Files.readAllBytes(Paths.get(mockJsonFile.getPath())), "UTF-8");
+                new String(Files.readAllBytes(Paths.get(mockJsonFile.getPath())), StandardCharsets.UTF_8);
 
         Gson gson = new Gson();
         MovieResponse resp = gson.fromJson(mockJson, MovieResponse.class);

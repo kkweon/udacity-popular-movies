@@ -19,7 +19,7 @@ public class FavoriteMovieRepository {
 
         return Observable.fromFuture(
                         CompletableFuture.supplyAsync(() -> favoriteMovieDao.getMovies()))
-                .map(xs -> new HashSet<>(xs));
+                .map(HashSet::new);
     }
 
     public @NonNull Observable<Long> insertFavoriteMovie(FavoriteMovie movie) {
@@ -30,10 +30,5 @@ public class FavoriteMovieRepository {
     public @NonNull Observable<Integer> deleteFavoriteMovie(FavoriteMovie movie) {
         return Observable.fromFuture(
                 CompletableFuture.supplyAsync(() -> favoriteMovieDao.delete(movie)));
-    }
-
-    public @NonNull Observable<Integer> deleteAll() {
-        return Observable.fromFuture(
-                CompletableFuture.supplyAsync(() -> favoriteMovieDao.deleteAll()));
     }
 }

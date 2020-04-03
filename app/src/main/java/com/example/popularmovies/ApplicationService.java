@@ -1,6 +1,7 @@
 package com.example.popularmovies;
 
 import android.content.Context;
+import android.util.Log;
 import com.example.popularmovies.persistence.FavoriteMovie;
 import com.example.popularmovies.persistence.FavoriteMovieRepository;
 import com.example.popularmovies.pojos.Movie;
@@ -18,6 +19,7 @@ import java.util.stream.Collectors;
  * truth.
  */
 public class ApplicationService {
+    private static final String TAG = ApplicationService.class.getSimpleName();
     private static ApplicationService instance = null;
 
     private BehaviorSubject<List<Movie>> movies;
@@ -42,7 +44,7 @@ public class ApplicationService {
         // Load Favorite Movies when initializing.
         favoriteMovieRepository
                 .getFavoriteMovies()
-                .map(movies -> movies.stream().map(m -> m.getId()))
+                .map(movies -> movies.stream().map(FavoriteMovie::getId))
                 .subscribeOn(Schedulers.io())
                 .subscribe(movies -> favoriteMovieIds.onNext(movies.collect(Collectors.toSet())));
     }
@@ -92,27 +94,40 @@ public class ApplicationService {
                     .deleteFavoriteMovie(new FavoriteMovie(id))
                     .subscribeOn(Schedulers.io())
                     .subscribe(
-                            integer -> {
+                            i -> {
                                 oldSet.remove(id);
+                                favoriteMovieIds.onNext(oldSet);
+
                                 if (shouldFilterByFavorite()) {
-                                    favoriteMovieIds.onNext(oldSet);
                                     // remove from the current movies.
                                     movies.onNext(
                                             movies.getValue().stream()
                                                     .filter(m -> m.getId() != id)
                                                     .collect(Collectors.toList()));
                                 }
-                            });
+                            },
+                            i ->
+                                    Log.v(
+                                            TAG,
+                                            String.format(
+                                                    "Failed to delete a favorite movie(id = %s)",
+                                                    id)));
 
         } else {
             favoriteMovieRepository
                     .insertFavoriteMovie(new FavoriteMovie(id))
                     .subscribeOn(Schedulers.io())
                     .subscribe(
-                            integer -> {
+                            i -> {
                                 oldSet.add(id);
                                 favoriteMovieIds.onNext(oldSet);
-                            });
+                            },
+                            i ->
+                                    Log.v(
+                                            TAG,
+                                            String.format(
+                                                    "Failed to insert a favorite movie(id = %s)",
+                                                    id)));
         }
     }
 

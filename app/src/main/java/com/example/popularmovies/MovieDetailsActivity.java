@@ -17,8 +17,7 @@ import com.example.popularmovies.pojos.movievideos.MovieVideosResponse;
 import com.example.popularmovies.pojos.movievideos.MovieVideosResponseItem;
 import com.squareup.picasso.Picasso;
 import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.disposables.Disposable;
-import java.util.ArrayList;
+import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import java.util.Calendar;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -49,14 +48,14 @@ public class MovieDetailsActivity extends AppCompatActivity {
     private RecyclerView movieDetailsReviews;
     private Button movieDetailsFavoriteButton;
 
-    private List<Disposable> subscriptions;
+    private CompositeDisposable subscriptions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_movie_details);
 
-        subscriptions = new ArrayList<>();
+        subscriptions = new CompositeDisposable();
 
         // Attach XML elements.
         movieDetailsPoster = findViewById(R.id.ImageView_movieDetailsPoster);
@@ -118,7 +117,8 @@ public class MovieDetailsActivity extends AppCompatActivity {
                                     textViewRunningTime =
                                             findViewById(R.id.TextView_detail_runningTime);
                                     textViewRunningTime.setText(
-                                            String.valueOf(response.body().getRuntime()) + " min");
+                                            response.body()
+                                                    .getRuntime() + " min");
                                 }
 
                                 @Override
@@ -139,7 +139,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
                                         Call<MovieVideosResponse> call,
                                         Response<MovieVideosResponse> response) {
                                     MovieVideosResponse videosResponse = response.body();
-                                    // TODO(kkweon): Suppose other types than YouTube in the future.
+                                    // TODO(kkweon): Support other types than YouTube in the future.
                                     List<MovieVideosResponseItem> videosResponseItems =
                                             videosResponse.results.stream()
                                                     .filter(v -> v.site.equals(YOUTUBE))
@@ -198,9 +198,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
         movieTrailers.setAdapter(
                 new MovieTrailerAdapter(
                         videosResponseItems,
-                        item -> {
-                            playVideo(item);
-                        }));
+                        this::playVideo));
     }
 
     private void initializeReviews(
@@ -227,6 +225,6 @@ public class MovieDetailsActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        subscriptions.forEach(s -> s.dispose());
+        subscriptions.dispose();
     }
 }

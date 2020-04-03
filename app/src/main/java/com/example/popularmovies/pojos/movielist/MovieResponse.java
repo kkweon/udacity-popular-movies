@@ -2,6 +2,8 @@ package com.example.popularmovies.pojos.movielist;
 
 import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
+
+import java.util.ArrayList;
 import java.util.List;
 import lombok.Data;
 
@@ -21,5 +23,5 @@ public class MovieResponse {
 
     @SerializedName("results")
     @Expose
-    private List<MovieResponseItem> results = null;
+    private List<MovieResponseItem> results = new ArrayList<>();
 }

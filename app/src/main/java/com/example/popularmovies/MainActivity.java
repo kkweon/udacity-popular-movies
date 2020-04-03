@@ -236,7 +236,7 @@ public class MainActivity extends AppCompatActivity {
 
                         applicationService.addMovies(
                                 movieResponse.getResults().stream()
-                                        .map(m -> Movie.fromMovieResponseItem(m))
+                                        .map(Movie::fromMovieResponseItem)
                                         .collect(Collectors.toList()));
 
                         applicationService.setLoading(false);
@@ -244,7 +244,7 @@ public class MainActivity extends AppCompatActivity {
 
                     @Override
                     public void onFailure(Call<MovieResponse> call, Throwable t) {
-                        Log.v(TAG, String.format("Failed to fetch movies data"));
+                        Log.v(TAG, "Failed to fetch movies data");
                         applicationService.setLoading(false);
                         showErrorMessage(t.getMessage());
                     }
