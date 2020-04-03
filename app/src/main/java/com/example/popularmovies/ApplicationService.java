@@ -109,7 +109,7 @@ public class ApplicationService {
                     .insertFavoriteMovie(new FavoriteMovie(id))
                     .subscribeOn(Schedulers.io())
                     .subscribe(
-                            intger -> {
+                            integer -> {
                                 oldSet.add(id);
                                 favoriteMovieIds.onNext(oldSet);
                             });
