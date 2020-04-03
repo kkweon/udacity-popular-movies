@@ -23,7 +23,9 @@ public class MovieResponseTest {
                                 .getResource("example_movie_response.json")
                                 .getFile());
         String mockJson =
-                new String(Files.readAllBytes(Paths.get(mockJsonFile.getPath())), StandardCharsets.UTF_8);
+                new String(
+                        Files.readAllBytes(Paths.get(mockJsonFile.getPath())),
+                        StandardCharsets.UTF_8);
 
         Gson gson = new Gson();
         MovieResponse resp = gson.fromJson(mockJson, MovieResponse.class);

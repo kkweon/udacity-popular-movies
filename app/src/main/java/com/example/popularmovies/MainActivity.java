@@ -277,8 +277,18 @@ public class MainActivity extends AppCompatActivity {
                         .getFilterByFavoriteObservable()
                         .observeOn(AndroidSchedulers.mainThread())
                         .subscribe(
-                                newState -> {
-                                    filterByFavoriteMenuItem.setChecked(newState);
+                                shouldFilterByFavorite -> {
+                                    filterByFavoriteMenuItem.setChecked(shouldFilterByFavorite);
+
+                                    if (shouldFilterByFavorite) {
+                                        // disable sort menu items;
+                                        popularMoviesMenuItem.setEnabled(false);
+                                        highestRatingMoviesMenuItem.setEnabled(false);
+                                    } else {
+                                        // enable sort menu items;
+                                        popularMoviesMenuItem.setEnabled(true);
+                                        highestRatingMoviesMenuItem.setEnabled(true);
+                                    }
 
                                     if (movieDetailAdapter != null) {
                                         movieDetailAdapter.notifyDataSetChanged();

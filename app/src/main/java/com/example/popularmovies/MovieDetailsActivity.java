@@ -117,8 +117,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
                                     textViewRunningTime =
                                             findViewById(R.id.TextView_detail_runningTime);
                                     textViewRunningTime.setText(
-                                            response.body()
-                                                    .getRuntime() + " min");
+                                            response.body().getRuntime() + " min");
                                 }
 
                                 @Override
@@ -195,10 +194,7 @@ public class MovieDetailsActivity extends AppCompatActivity {
         RecyclerView.LayoutManager layoutManager = new LinearLayoutManager(this);
         movieTrailers.setLayoutManager(layoutManager);
         movieTrailers.setHasFixedSize(true);
-        movieTrailers.setAdapter(
-                new MovieTrailerAdapter(
-                        videosResponseItems,
-                        this::playVideo));
+        movieTrailers.setAdapter(new MovieTrailerAdapter(videosResponseItems, this::playVideo));
     }
 
     private void initializeReviews(
